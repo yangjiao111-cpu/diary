@@ -66,4 +66,13 @@ class DiaryRepository {
   Future<void> delete(int id) {
     return (_db.delete(_db.entries)..where((t) => t.id.equals(id))).go();
   }
+
+  /// 按关键词搜索（content/title 子串匹配），按创建时间倒序。
+  Stream<List<DiaryEntry>> searchEntries(String keyword) {
+    final like = '%$keyword%';
+    return (_db.select(_db.entries)
+          ..where((t) => t.content.like(like) | t.title.like(like))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
 }

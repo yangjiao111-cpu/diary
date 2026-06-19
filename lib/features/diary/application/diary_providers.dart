@@ -27,3 +27,10 @@ final diaryListProvider = StreamProvider<List<DiaryEntry>>((ref) {
 final diaryEntryProvider = StreamProvider.family<DiaryEntry?, int>((ref, id) {
   return ref.watch(diaryRepositoryProvider).watchEntry(id);
 });
+
+/// 关键词搜索结果（query 为空时返回空列表，不查库）。
+final searchResultsProvider =
+    StreamProvider.family<List<DiaryEntry>, String>((ref, query) {
+  if (query.isEmpty) return Stream.value(const []);
+  return ref.watch(diaryRepositoryProvider).searchEntries(query);
+});

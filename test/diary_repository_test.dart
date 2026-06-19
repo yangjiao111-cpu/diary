@@ -44,4 +44,21 @@ void main() {
     expect(await repo.watchEntries().first, isEmpty);
     expect(await repo.getEntry(id), isNull);
   });
+
+  test('搜索：内容/标题子串匹配', () async {
+    await repo.create(content: '今天很开心', mood: 'happy');
+    await repo.create(content: '明天会更好', title: '展望');
+    await repo.create(content: '随便写写');
+
+    // 子串「天」命中前两条
+    expect(await repo.searchEntries('天').first, hasLength(2));
+    // 「开心」命中一条
+    final happy = await repo.searchEntries('开心').first;
+    expect(happy.single.content, '今天很开心');
+    // 标题也参与匹配
+    final byTitle = await repo.searchEntries('展望').first;
+    expect(byTitle.single.title, '展望');
+    // 无匹配返回空
+    expect(await repo.searchEntries('不存在的词').first, isEmpty);
+  });
 }
