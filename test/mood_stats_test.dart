@@ -26,35 +26,33 @@ void main() {
     expect(dist[Mood.calm], isNull);
   });
 
-  test('monthlyMoodStats 按月分桶并计算加权平均心情指数', () {
-    final now = DateTime(2026, 6, 15);
+  test('weeklyMoodStats 按天分桶并计算加权平均心情指数', () {
+    final now = DateTime(2026, 6, 15); // 周一
+    // 今天 6/15 开心, 昨天 6/14 难过
     final entries = [
-      _entry(mood: 'happy', at: DateTime(2026, 6, 1)),   // +10
-      _entry(mood: 'happy', at: DateTime(2026, 6, 20)),  // +10
-      _entry(mood: 'sad', at: DateTime(2026, 6, 25)),    // -5
-      _entry(mood: 'calm', at: DateTime(2026, 5, 10)),   // +5
+      _entry(mood: 'happy', at: DateTime(2026, 6, 15)),
+      _entry(mood: 'sad', at: DateTime(2026, 6, 14)),
     ];
-    final stats = monthlyMoodStats(entries, now: now, months: 6);
-    expect(stats.length, 6);
+    final stats = weeklyMoodStats(entries, now: now, days: 7);
+    expect(stats.length, 7);
 
-    final june = stats.last; // 本月（6 月）
-    expect(june.month.month, 6);
-    expect(june.count, 3);
-    expect(june.dominantMood, Mood.happy);
-    // (10 + 10 + (-5)) / 3 = 5.0
-    expect(june.score, 5.0);
+    final today = stats.last; // 6月15日
+    expect(today.date, DateTime(2026, 6, 15));
+    expect(today.count, 1);
+    expect(today.dominantMood, Mood.happy);
+    expect(today.score, 10.0); // +10 / 1
 
-    final may = stats[stats.length - 2]; // 5 月
-    expect(may.month.month, 5);
-    expect(may.count, 1);
-    expect(may.dominantMood, Mood.calm);
-    expect(may.score, 5.0); // (+5) / 1 = 5.0
+    final yesterday = stats[stats.length - 2]; // 6月14日
+    expect(yesterday.date, DateTime(2026, 6, 14));
+    expect(yesterday.count, 1);
+    expect(yesterday.dominantMood, Mood.sad);
+    expect(yesterday.score, -5.0); // -5 / 1
   });
 
-  test('monthlyMoodStats 无标记心情的月份 score 为 null', () {
+  test('weeklyMoodStats 无标记心情的日期 score 为 null', () {
     final now = DateTime(2026, 6, 15);
     final entries = <DiaryEntry>[];
-    final stats = monthlyMoodStats(entries, now: now, months: 3);
+    final stats = weeklyMoodStats(entries, now: now, days: 3);
     for (final s in stats) {
       expect(s.score, isNull);
       expect(s.count, 0);

@@ -9,7 +9,7 @@ import '../../../diary/application/diary_providers.dart';
 import '../../../diary/domain/mood.dart';
 import '../../application/mood_stats.dart';
 
-/// 心情统计页：心情分布饼图 + 近半年心情指数折线图。
+/// 心情统计页：心情分布饼图 + 近一周心情指数折线图。
 class StatsPage extends ConsumerWidget {
   const StatsPage({super.key});
 
@@ -27,13 +27,13 @@ class StatsPage extends ConsumerWidget {
             );
           }
           final dist = moodDistribution(entries);
-          final monthly = monthlyMoodStats(entries, now: DateTime.now());
+          final weekly = weeklyMoodStats(entries, now: DateTime.now());
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
               _DistributionCard(distribution: dist),
               const SizedBox(height: 16),
-              _TrendCard(monthly: monthly),
+              _TrendCard(weekly: weekly),
             ],
           );
         },
@@ -165,16 +165,15 @@ class _PieSlice {
   final double ratio;
 }
 
-// ---- 折线图（心情指数） ----
+// ---- 折线图（近一周心情指数） ----
 
 class _TrendCard extends StatelessWidget {
-  const _TrendCard({required this.monthly});
-  final List<MonthlyMoodStat> monthly;
+  const _TrendCard({required this.weekly});
+  final List<DayMoodStat> weekly;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Y 轴范围：硬编码 -10 ~ +10（心情分范围），保证零线居中
     const double yMin = -10, yMax = 10;
     return PaperCard(
       child: Column(
@@ -183,7 +182,7 @@ class _TrendCard extends StatelessWidget {
           Text('心情指数', style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),
           Text(
-            '近 6 个月趋势',
+            '近 7 天趋势',
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
@@ -196,25 +195,23 @@ class _TrendCard extends StatelessWidget {
               const padTop = 10.0, padBottom = 30.0, padLeft = 10.0, padRight = 10.0;
               final chartW = w - padLeft - padRight;
               final chartH = h - padTop - padBottom;
-              // 有数据的月份索引
               final hasScore = <int>[];
-              for (var i = 0; i < monthly.length; i++) {
-                if (monthly[i].score != null) hasScore.add(i);
+              for (var i = 0; i < weekly.length; i++) {
+                if (weekly[i].score != null) hasScore.add(i);
               }
-              // 构建数据点（像素坐标）
               final points = <Offset>[];
               for (final idx in hasScore) {
-                final x = padLeft + (idx + 0.5) * (chartW / monthly.length);
+                final x = padLeft + (idx + 0.5) * (chartW / weekly.length);
                 final y = padTop +
                     chartH -
-                    ((monthly[idx].score! - yMin) / (yMax - yMin) * chartH);
+                    ((weekly[idx].score! - yMin) / (yMax - yMin) * chartH);
                 points.add(Offset(x, y));
               }
               return CustomPaint(
                 size: Size(w, h),
                 painter: _LinePainter(
                   points: points,
-                  monthly: monthly,
+                  weekly: weekly,
                   hasScore: hasScore,
                   yMin: yMin,
                   yMax: yMax,
@@ -237,7 +234,7 @@ class _TrendCard extends StatelessWidget {
 class _LinePainter extends CustomPainter {
   const _LinePainter({
     required this.points,
-    required this.monthly,
+    required this.weekly,
     required this.hasScore,
     required this.yMin,
     required this.yMax,
@@ -250,11 +247,13 @@ class _LinePainter extends CustomPainter {
   });
 
   final List<Offset> points;
-  final List<MonthlyMoodStat> monthly;
+  final List<DayMoodStat> weekly;
   final List<int> hasScore;
   final double yMin, yMax;
   final double chartH, chartTop, chartLeft, chartW;
   final Color accent, inkSoft;
+
+  static const _weekdayLabels = ['一', '二', '三', '四', '五', '六', '日'];
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -269,31 +268,22 @@ class _LinePainter extends CustomPainter {
     final dotFill = Paint()
       ..color = accent
       ..style = PaintingStyle.fill;
-    final dotBorder = Paint()
-      ..color = accent
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    final labelStyle = TextStyle(
-      color: inkSoft,
-      fontSize: 11,
-    );
 
     // 水平网格线（间隔 5 分）
     for (var v = -10; v <= 10; v += 5) {
       final y = chartTop + chartH - ((v - yMin) / (yMax - yMin) * chartH);
-      canvas.drawLine(
-        Offset(chartLeft, y),
-        Offset(chartLeft + chartW, y),
-        gridPaint,
-      );
+      canvas.drawLine(Offset(chartLeft, y), Offset(chartLeft + chartW, y), gridPaint);
       final tp = TextPainter(
-        text: TextSpan(text: '$v', style: labelStyle),
+        text: TextSpan(
+          text: '${v > 0 ? "+" : ""}$v',
+          style: TextStyle(color: inkSoft, fontSize: 11),
+        ),
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, Offset(0, y - tp.height / 2));
     }
 
-    // 零线加粗
+    // 零线
     final zeroY = chartTop + chartH - ((0 - yMin) / (yMax - yMin) * chartH);
     canvas.drawLine(
       Offset(chartLeft, zeroY),
@@ -303,24 +293,21 @@ class _LinePainter extends CustomPainter {
         ..strokeWidth = 1.2,
     );
 
-    // X 轴月份标签
-    final monthLabelStyle = TextStyle(color: inkSoft, fontSize: 10);
-    for (var i = 0; i < monthly.length; i++) {
-      final x = chartLeft + (i + 0.5) * (chartW / monthly.length);
+    // X 轴星期标签
+    final labelStyle = TextStyle(color: inkSoft, fontSize: 10);
+    for (var i = 0; i < weekly.length; i++) {
+      final x = chartLeft + (i + 0.5) * (chartW / weekly.length);
       final tp = TextPainter(
         text: TextSpan(
-          text: '${monthly[i].month.month}月',
-          style: monthLabelStyle,
+          text: _weekdayLabels[(weekly[i].date.weekday - 1) % 7],
+          style: labelStyle,
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(
-        canvas,
-        Offset(x - tp.width / 2, chartTop + chartH + 6),
-      );
+      tp.paint(canvas, Offset(x - tp.width / 2, chartTop + chartH + 6));
     }
 
-    // 折线（至少两个点）
+    // 折线
     if (points.length >= 2) {
       final path = Path()..moveTo(points.first.dx, points.first.dy);
       for (var i = 1; i < points.length; i++) {
@@ -329,14 +316,13 @@ class _LinePainter extends CustomPainter {
       canvas.drawPath(path, linePaint);
     }
 
-    // 数据点（空心圆 + 实心填充）
+    // 数据点
     for (final p in points) {
       canvas.drawCircle(p, 5, dotFill);
-      canvas.drawCircle(p, 5, dotBorder);
     }
   }
 
   @override
   bool shouldRepaint(_LinePainter old) =>
-      points != old.points || monthly != old.monthly;
+      points != old.points || weekly != old.weekly;
 }
