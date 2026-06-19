@@ -12,18 +12,23 @@ Map<Mood, int> moodDistribution(List<DiaryEntry> entries) {
   return counts;
 }
 
-/// 某月的心情统计：篇数 + 主导心情（当月出现最多的心情）。
+/// 某月的心情统计：篇数 + 主导心情 + 心情指数。
 class MonthlyMoodStat {
   const MonthlyMoodStat({
     required this.month,
     required this.count,
     required this.dominantMood,
+    required this.score,
   });
 
   /// 当月 1 号。
   final DateTime month;
+  /// 当月日记总篇数。
   final int count;
+  /// 当月出现最多的心情。
   final Mood? dominantMood;
+  /// 心情指数：当月所有标了心情的日记的 [Mood.score] 加权平均（未标心情的忽略）。
+  final double? score;
 }
 
 /// 最近 [months] 个月（含本月）的每月统计，按时间升序。
@@ -55,9 +60,16 @@ List<MonthlyMoodStat> monthlyMoodStats(
         dominant = entry.key;
       }
     }
-    result.add(
-      MonthlyMoodStat(month: m, count: list.length, dominantMood: dominant),
-    );
+    // 加权平均心情指数
+    final scored = list.map((e) => Mood.fromId(e.mood)).where((m) => m != null);
+    final score =
+        scored.isEmpty ? null : scored.fold<int>(0, (s, m) => s + m!.score) / scored.length;
+    result.add(MonthlyMoodStat(
+      month: m,
+      count: list.length,
+      dominantMood: dominant,
+      score: score,
+    ));
   }
   return result;
 }
