@@ -4,8 +4,9 @@ import '../calendar/presentation/pages/calendar_page.dart';
 import '../diary/presentation/pages/diary_list_page.dart';
 import '../search/presentation/pages/search_page.dart';
 import '../settings/presentation/pages/settings_page.dart';
+import '../stats/presentation/pages/stats_page.dart';
 
-/// 底部导航外壳：用 IndexedStack 保活四个主页面，NavigationBar 切换。
+/// 底部导航外壳：用 IndexedStack 保活五个主页面，NavigationBar 切换。
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -20,6 +21,7 @@ class _HomeShellState extends State<HomeShell> {
     DiaryListPage(),
     CalendarPage(),
     SearchPage(),
+    StatsPage(),
     SettingsPage(),
   ];
 
@@ -45,6 +47,11 @@ class _HomeShellState extends State<HomeShell> {
             icon: Icon(Icons.search_outlined),
             selectedIcon: Icon(Icons.search),
             label: '搜索',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.insights_outlined),
+            selectedIcon: Icon(Icons.insights),
+            label: '统计',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
