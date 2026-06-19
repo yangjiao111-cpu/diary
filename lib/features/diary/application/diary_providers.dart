@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../stats/application/mood_stats.dart';
+import '../../diary/domain/mood.dart';
 import '../data/diary_repository.dart';
 
 /// 全局数据库单例；随 ProviderScope 释放时关闭连接。
@@ -33,4 +35,19 @@ final searchResultsProvider =
     StreamProvider.family<List<DiaryEntry>, String>((ref, query) {
   if (query.isEmpty) return Stream.value(const []);
   return ref.watch(diaryRepositoryProvider).searchEntries(query);
+});
+
+/// 心情分布（动态响应，用于饼图）。
+final moodDistributionProvider = Provider<Map<Mood, int>>((ref) {
+  final entries = ref.watch(diaryListProvider);
+  return moodDistribution(entries.value ?? const []);
+});
+
+/// 近一周心情指数（动态响应，用于折线图）。
+final weeklyMoodStatsProvider = Provider<List<DayMoodStat>>((ref) {
+  final entries = ref.watch(diaryListProvider);
+  return weeklyMoodStats(
+    entries.value ?? const [],
+    now: DateTime.now(),
+  );
 });

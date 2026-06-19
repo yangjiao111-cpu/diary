@@ -26,8 +26,8 @@ class StatsPage extends ConsumerWidget {
               message: '还没有日记\n记录后这里会显示心情统计',
             );
           }
-          final dist = moodDistribution(entries);
-          final weekly = weeklyMoodStats(entries, now: DateTime.now());
+          final dist = ref.watch(moodDistributionProvider);
+          final weekly = ref.watch(weeklyMoodStatsProvider);
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
