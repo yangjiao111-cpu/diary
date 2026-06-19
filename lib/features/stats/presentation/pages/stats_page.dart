@@ -156,7 +156,7 @@ class _PiePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PiePainter old) => slices != old.slices;
+  bool shouldRepaint(_PiePainter old) => true;
 }
 
 class _PieSlice {
@@ -323,6 +323,5 @@ class _LinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_LinePainter old) =>
-      points != old.points || weekly != old.weekly;
+  bool shouldRepaint(_LinePainter old) => true;
 }
