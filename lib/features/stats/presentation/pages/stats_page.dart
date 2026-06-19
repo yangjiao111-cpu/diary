@@ -197,14 +197,14 @@ class _TrendCard extends StatelessWidget {
               final chartH = h - padTop - padBottom;
               final hasScore = <int>[];
               for (var i = 0; i < weekly.length; i++) {
-                if (weekly[i].score != null) hasScore.add(i);
+                hasScore.add(i); // score 现在是 double 永不为 null，7 天全画
               }
               final points = <Offset>[];
               for (final idx in hasScore) {
                 final x = padLeft + (idx + 0.5) * (chartW / weekly.length);
                 final y = padTop +
                     chartH -
-                    ((weekly[idx].score! - yMin) / (yMax - yMin) * chartH);
+                    ((weekly[idx].score - yMin) / (yMax - yMin) * chartH);
                 points.add(Offset(x, y));
               }
               return CustomPaint(

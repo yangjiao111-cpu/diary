@@ -27,8 +27,9 @@ class DayMoodStat {
   final int count;
   /// 当日出现最多的心情。
   final Mood? dominantMood;
-  /// 心情指数：当日所有标了心情的日记的 [Mood.score] 加权平均（未标心情的忽略）。
-  final double? score;
+  /// 心情指数：当日所有标了心情的日记的 [Mood.score] 加权平均。
+  /// 无日记或全部未标心情时为 0。
+  final double score;
 }
 
 /// 最近 [days] 天（含今天）的每日统计，按时间升序。
@@ -61,11 +62,11 @@ List<DayMoodStat> weeklyMoodStats(
         dominant = entry.key;
       }
     }
-    // 加权平均心情指数
+    // 加权平均心情指数：无日记或全部未标心情则为 0
     final scored =
         list.map((e) => Mood.fromId(e.mood)).where((m) => m != null);
     final score = scored.isEmpty
-        ? null
+        ? 0.0
         : scored.fold<int>(0, (s, m) => s + m!.score) / scored.length;
     result.add(DayMoodStat(
       date: d,
