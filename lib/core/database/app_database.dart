@@ -18,6 +18,15 @@ class Entries extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// 设置键值表：主题模式、PIN、提醒等以 key-value 形式存储。
+class Settings extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+
+  @override
+  Set<Column> get primaryKey => {key};
+}
+
 /// 应用数据库（drift）。
 ///
 /// 作为跨 feature 的基础设施放在 `core/`，M3 的日历/搜索复用同一个库。
@@ -25,11 +34,21 @@ class Entries extends Table {
 ///
 /// drift ≥ 2.32 起原生平台无需额外 native 配置，`driftDatabase` 会按平台
 /// 选择实现，桌面/移动端把库文件存到应用文档目录下的 `diary.sqlite`。
-@DriftDatabase(tables: [Entries])
+@DriftDatabase(tables: [Entries, Settings])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
       : super(executor ?? driftDatabase(name: 'diary'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(settings);
+          }
+        },
+      );
 }
